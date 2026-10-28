@@ -51,38 +51,46 @@ function renderMainSummary(){const m=dedupeTracks([...slots.main.liked,...slots.
 async function importSlot(slot,files){if(!files.length)return;slots[slot]={label:slots[slot].label,playlists:[],liked:[]};setStatus('status-'+slot,'Leyendo archivos...');try{for(const f of files)await readFile(f,slot);slots[slot].playlists=slots[slot].playlists.map(p=>({...p,tracks:dedupeTracks(p.tracks)}));slots[slot].liked=dedupeTracks(slots[slot].liked);renderSlot(slot);if(slot==='main')renderMainSummary();const count=slots[slot].playlists.length,liked=slots[slot].liked.length;setStatus('status-'+slot,`Importación lista: ${count} playlists y ${liked} canciones guardadas detectadas.`);if(!count&&!liked)setStatus('status-'+slot,'No se reconocieron playlists ni canciones guardadas. Probá con el ZIP de datos de Spotify o con YourLibrary.json / un JSON de playlists.');}catch(e){console.error(e);setStatus('status-'+slot,'No se pudo importar: '+e.message);}}
 ['main','sup1','sup2'].forEach(slot=>$('file-'+slot).addEventListener('change',e=>importSlot(slot,[...e.target.files])));
 
-// Importación experimental de temas de playlists públicas.
-// Spotify restringe los datos completos de muchas playlists públicas en su API oficial.
-// Este método intenta leer la lista pública visible usando el proxy de lectura de Jina AI.
-// Es un servicio externo y puede fallar, limitar resultados o cambiar su formato.
+// Importación experimental de temas de playlists públicas mediante el HTML embebido de Spotify.
+// Spotify no garantiza esta superficie no oficial; los servicios externos pueden limitarla o cambiarla.
 const publicPlaylistLinks={sup1:[],sup2:[]};
 
-function parsePublicPlaylistMarkdown(markdown, playlistId){
- const lines=String(markdown||'').split(/\r?\n/);
+function parseSpotifyEmbedHtml(html){
+ const doc=new DOMParser().parseFromString(String(html||''),'text/html');
+ const script=doc.querySelector('script#__NEXT_DATA__');
+ if(!script?.textContent)throw new Error('La respuesta no incluyó los datos embebidos de Spotify.');
+ return parseSpotifyEmbedJson(script.textContent);
+}
+function parseSpotifyEmbedJson(jsonText){
+ let root;try{root=typeof jsonText==='string'?JSON.parse(jsonText):jsonText}catch{throw new Error('Los datos embebidos no son JSON válido.');}
+ const seen=new Set();
+ function findEntity(node,depth=0){
+  if(!node||typeof node!=='object'||depth>12||seen.has(node))return null;seen.add(node);
+  if(Array.isArray(node)){for(const item of node){const got=findEntity(item,depth+1);if(got)return got;}return null;}
+  if(node.type==='playlist'&&Array.isArray(node.trackList))return node;
+  for(const key of ['entity','data','state','pageProps','props','initialState','playlist']){if(node[key]){const got=findEntity(node[key],depth+1);if(got)return got;}}
+  for(const value of Object.values(node)){if(value&&typeof value==='object'){const got=findEntity(value,depth+1);if(got)return got;}}
+  return null;
+ }
+ const entity=findEntity(root);
+ if(!entity)throw new Error('Spotify no incluyó la lista de canciones en el reproductor embebido.');
  const tracks=[];
- let pendingTitle='';
- for(const rawLine of lines){
-  const line=rawLine.trim();
-  // Las páginas públicas suelen representarse como: ### Título y #### Artista.
-  if(/^###\s+/.test(line)&&!/^####/.test(line)){
-   pendingTitle=line.replace(/^###\s+/,'').replace(/\s+#*$/,'').trim();
-   continue;
-  }
-  if(/^####\s+/.test(line)&&pendingTitle){
-   let artist=line.replace(/^####\s+/,'').trim();
-   artist=artist.replace(/^\[?E\]?\s+/,'').replace(/^E\s+/,'').trim();
-   if(pendingTitle && artist && !/^Spotify$/i.test(pendingTitle)){
-    const searchUrl='https://open.spotify.com/search/'+encodeURIComponent(pendingTitle+' '+artist);
-    tracks.push({
-     title:pendingTitle,
-     artist:artist,
-     uri:'',
-     url:searchUrl,
-     key:'meta:'+norm(pendingTitle)+'|'+norm(artist)
-    });
-   }
-   pendingTitle='';
-  }
+ for(const item of entity.trackList||[]){
+  const title=String(item.title||item.name||'').trim();
+  const artist=String(item.subtitle||item.artist||'').trim();
+  const uri=String(item.uri||item.track?.uri||'').trim();
+  if(!title||!artist)continue;
+  const id=uri.match(/spotify:track:([A-Za-z0-9]+)/)?.[1];
+  tracks.push({title,artist,uri:id?'spotify:track:'+id:'',url:id?'https://open.spotify.com/track/'+id:'',key:id?'spotify:track:'+id:'meta:'+norm(title)+'|'+norm(artist)});
+ }
+ return {title:String(entity.name||entity.title||'Playlist pública de Spotify'),tracks:dedupeTracks(tracks)};
+}
+
+function parsePublicPlaylistMarkdown(markdown){
+ const lines=String(markdown||'').split(/\r?\n/);const tracks=[];let pendingTitle='';
+ for(const rawLine of lines){const line=rawLine.trim();
+  if(/^###\s+/.test(line)&&!/^####/.test(line)){pendingTitle=line.replace(/^###\s+/,'').trim();continue;}
+  if(/^####\s+/.test(line)&&pendingTitle){const artist=line.replace(/^####\s+/,'').replace(/^\[?E\]?\s+/,'').trim();if(pendingTitle&&artist&&!/^Spotify$/i.test(pendingTitle)){tracks.push({title:pendingTitle,artist,uri:'',url:'https://open.spotify.com/search/'+encodeURIComponent(pendingTitle+' '+artist),key:'meta:'+norm(pendingTitle)+'|'+norm(artist)});}pendingTitle='';}
  }
  return dedupeTracks(tracks);
 }
@@ -90,46 +98,64 @@ function parsePublicPlaylistMarkdown(markdown, playlistId){
 async function addPublicPlaylistLink(slot){
  const input=$('url-'+slot),container=$('links-'+slot),raw=input.value.trim();
  if(!raw){container.textContent='Pegá un enlace de Spotify.';return;}
- let url;
- try{url=new URL(raw);}catch{container.textContent='El enlace no es válido.';return;}
- if(!['open.spotify.com','www.open.spotify.com'].includes(url.hostname)||!/^\/playlist\/[A-Za-z0-9]+\/?$/.test(url.pathname)){
+ let url;try{url=new URL(raw)}catch{container.textContent='El enlace no es válido.';return;}
+ if(!['open.spotify.com','www.open.spotify.com'].includes(url.hostname)||!/^\/(?:intl-[a-z]{2}\/)?playlist\/[A-Za-z0-9]+\/?$/.test(url.pathname)){
   container.textContent='Usá un enlace de playlist de https://open.spotify.com/playlist/...';return;
  }
- const playlistId=url.pathname.split('/')[2];
+ const match=url.pathname.match(/playlist\/([A-Za-z0-9]+)/);const playlistId=match?.[1];
+ if(!playlistId){container.textContent='No se pudo reconocer el ID de la playlist.';return;}
  if(publicPlaylistLinks[slot].some(p=>p.id===playlistId)){container.textContent='Ese enlace ya fue agregado.';return;}
  const card=document.createElement('div');card.className='rounded-lg bg-black/30 p-3 space-y-2';card.textContent='Intentando leer los temas de la playlist pública...';container.prepend(card);
  try{
   const embedUrl='https://open.spotify.com/embed/playlist/'+playlistId;
   const relayUrl='https://r.jina.ai/'+embedUrl;
-  const response=await fetch(relayUrl,{headers:{'Accept':'text/plain'}});
-  if(!response.ok)throw new Error('El servicio intermediario respondió '+response.status+'.');
-  const markdown=await response.text();
-  const tracks=parsePublicPlaylistMarkdown(markdown,playlistId);
-  if(!tracks.length)throw new Error('No se pudo reconocer una lista de canciones en la respuesta.');
-  const titleMatch=markdown.match(/(?:^|\n)##\s+([^\n]+)/);
-  const playlistTitle=titleMatch?titleMatch[1].replace(/\s*[·|]\s*.*$/,'').trim():'Playlist pública de Spotify';
-  const item={id:playlistId,url:'https://open.spotify.com/playlist/'+playlistId,title:playlistTitle,author:'Spotify',trackCount:tracks.length};
+  let parsed,lastError;
+  // Primer intento: lector web devolviendo HTML con los datos estructurados de Spotify.
+  try{
+   const response=await fetch(relayUrl,{headers:{'X-Return-Format':'html','Accept':'text/html'}});
+   if(!response.ok)throw new Error('Jina respondió '+response.status+'.');
+   parsed=parseSpotifyEmbedHtml(await response.text());
+  }catch(e){lastError=e;}
+  // Segundo intento: otro relay público que extrae directamente el script JSON del reproductor.
+  if(!parsed){
+   try{
+    const relay='https://web.scraper.workers.dev/?url='+encodeURIComponent(embedUrl)+'&selector='+encodeURIComponent('script#__NEXT_DATA__')+'&scrape=text';
+    const response=await fetch(relay,{headers:{'Accept':'application/json'}});
+    if(!response.ok)throw new Error('El segundo servicio respondió '+response.status+'.');
+    const data=await response.json();
+    const raw=data?.result?.['script#__NEXT_DATA__'];
+    const jsonText=Array.isArray(raw)?raw[0]:raw;
+    if(!jsonText)throw new Error('El segundo servicio no encontró los datos del reproductor.');
+    parsed=parseSpotifyEmbedJson(jsonText);
+   }catch(e){lastError=e;}
+  }
+  // Tercer intento: Markdown con títulos y artistas, si los relays no entregaron JSON.
+  if(!parsed){
+   try{
+    const response=await fetch(relayUrl,{headers:{'Accept':'text/plain'}});
+    if(!response.ok)throw new Error('No se pudo leer la salida Markdown.');
+    const tracks=parsePublicPlaylistMarkdown(await response.text());
+    if(!tracks.length)throw new Error('No se reconocieron títulos y artistas.');
+    parsed={title:'Playlist pública de Spotify',tracks};
+   }catch(e){throw new Error((lastError?.message||'Fallaron los servicios de lectura.')+'; alternativa: '+(e?.message||'sin resultados'));}
+  }
+  if(!parsed.tracks.length)throw new Error('No se encontraron canciones en la respuesta de Spotify.');
+  const item={id:playlistId,url:'https://open.spotify.com/playlist/'+playlistId,title:parsed.title,author:'Spotify',trackCount:parsed.tracks.length};
   publicPlaylistLinks[slot].push(item);
-  slots[slot].playlists.push({name:item.title+' · enlace público ('+tracks.length+' temas)',tracks,source:'public-link:'+playlistId,publicLinkId:playlistId});
-  renderSlot(slot);
-  card.replaceChildren();
+  slots[slot].playlists.push({name:item.title+' · enlace público ('+parsed.tracks.length+' temas)',tracks:parsed.tracks,source:'public-link:'+playlistId,publicLinkId:playlistId});
+  renderSlot(slot);card.replaceChildren();
   const title=document.createElement('p');title.className='font-semibold text-green-400';title.textContent=item.title;
-  const count=document.createElement('p');count.className='text-gray-200';count.textContent='Se importaron '+tracks.length+' temas para la fusión.';
+  const count=document.createElement('p');count.className='text-gray-200';count.textContent='Se importaron '+parsed.tracks.length+' temas para la fusión.';
   const link=document.createElement('a');link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';link.className='underline text-green-400';link.textContent='Abrir playlist original';
-  const note=document.createElement('p');note.className='text-amber-300';note.textContent='Importación experimental: puede contener solo una parte de la playlist. Revisá la cantidad contra Spotify antes de usar la lista final.';
-  const remove=document.createElement('button');remove.type='button';remove.className='underline text-gray-400';remove.textContent='Quitar playlist importada';remove.onclick=()=>{
-   publicPlaylistLinks[slot]=publicPlaylistLinks[slot].filter(p=>p.id!==playlistId);
-   slots[slot].playlists=slots[slot].playlists.filter(p=>p.publicLinkId!==playlistId);
-   renderSlot(slot);card.remove();
-  };
+  const note=document.createElement('p');note.className='text-amber-300';note.textContent='Importación experimental: puede que no incluya toda la playlist. Compará la cantidad con Spotify antes de usar la lista final.';
+  const remove=document.createElement('button');remove.type='button';remove.className='underline text-gray-400';remove.textContent='Quitar playlist importada';remove.onclick=()=>{publicPlaylistLinks[slot]=publicPlaylistLinks[slot].filter(p=>p.id!==playlistId);slots[slot].playlists=slots[slot].playlists.filter(p=>p.publicLinkId!==playlistId);renderSlot(slot);card.remove();};
   card.append(title,count,link,note,remove);input.value='';
-  setStatus('status-'+slot,'Playlist pública agregada: '+tracks.length+' temas importados. Marcá o desmarcá la playlist en la lista de abajo.');
+  setStatus('status-'+slot,'Playlist pública agregada: '+parsed.tracks.length+' temas importados. Marcá o desmarcá la playlist en la lista de abajo.');
  }catch(error){
-  console.warn('Error importando playlist pública:',error);
-  card.replaceChildren();
-  const msg=document.createElement('p');msg.className='text-amber-300';msg.textContent='No se pudieron importar los temas desde este enlace. El servicio intermediario puede estar bloqueado o haber cambiado. Probá más tarde o usá ZIP/JSON.';
-  const link=document.createElement('a');link.href='https://open.spotify.com/playlist/'+playlistId;link.target='_blank';link.rel='noopener noreferrer';link.className='underline text-green-400';link.textContent='Abrir playlist en Spotify';
-  card.append(msg,link);
+  console.warn('Error importando playlist pública:',error);card.replaceChildren();
+  const msg=document.createElement('p');msg.className='text-amber-300';msg.textContent='No se pudieron importar los temas desde este enlace. Spotify o el servicio intermediario no devolvieron la lista. Probá de nuevo o usá ZIP/JSON.';
+  const detail=document.createElement('p');detail.className='text-gray-500';detail.textContent=String(error?.message||'Error desconocido');
+  const link=document.createElement('a');link.href='https://open.spotify.com/playlist/'+playlistId;link.target='_blank';link.rel='noopener noreferrer';link.className='underline text-green-400';link.textContent='Abrir playlist en Spotify';card.append(msg,detail,link);
  }
 }
 ['sup1','sup2'].forEach(slot=>{
