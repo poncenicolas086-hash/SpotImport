@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fusionador de Spotify - Sistema Multi-Cuenta</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #121212 0%, #181818 50%, #050505 100%);
+      color: #FFFFFF;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      min-height: 100vh;
+    }
+    .spotify-green { color: #1DB954; }
+    .bg-spotify-green { background-color: #1DB954; }
+    .bg-spotify-green:hover { background-color: #1ed760; }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+  <div class="max-w-5xl mx-auto space-y-6">
+    
+    <!-- Header -->
+    <header class="text-center space-y-2">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-spotify-green/10 text-spotify-green text-sm font-semibold border border-spotify-green/20">
+        <i class="fa-brands fa-spotify text-lg"></i>
+        <span>Panel Multi-Cuenta por Slots</span>
+      </div>
+      <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight">Fusionador de Cuentas Spotify</h1>
+      <p class="text-gray-400 max-w-xl mx-auto text-sm md:text-base">
+        Conecta tu cuenta Main y tus cuentas suplentes. Selecciona tus playlists y fusiona todo automáticamente sin duplicados.
+      </p>
+    </header>
+
+    <!-- Configuración Client ID -->
+    <div class="glass-card p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="w-full md:w-1/2 space-y-1">
+        <label class="block text-xs font-medium text-gray-400">Tu Client ID de Spotify Developer:</label>
+        <input type="text" id="clientIdInput" placeholder="Pega tu Client ID aquí" 
+          class="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-spotify-green">
+      </div>
+      <div class="text-xs text-gray-400 w-full md:w-auto bg-black/30 p-3 rounded-lg border border-gray-800">
+        <p><i class="fa-solid fa-circle-info spotify-green mr-1"></i> Redirect URI detectada:</p>
+        <span id="uriDisplay" class="text-gray-300 font-mono text-[11px] select-all"></span>
+      </div>
+    </div>
+
+    <!-- Contenedor de 3 Slots -->
+    <div class="grid md:grid-cols-3 gap-6">
+      
+      <!-- SLOT 1: MAIN -->
+      <div class="glass-card p-6 space-y-4 border-2 border-spotify-green/40 shadow-lg shadow-spotify-green/5">
+        <div class="flex items-center justify-between">
+          <span class="px-2.5 py-1 bg-spotify-green/20 text-spotify-green text-xs font-bold rounded-full">SLOT 1 - MAIN</span>
+          <i class="fa-solid fa-crown text-amber-400 text-lg"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-base">Cuenta Principal</h3>
+          <p class="text-xs text-gray-400">Destino donde se creará la playlist unificada.</p>
+        </div>
+        
+        <div id="slot1-offline" class="space-y-3 pt-2">
+          <button onclick="loginSlot('main')" class="w-full bg-spotify-green text-black font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition transform active:scale-95">
+            <i class="fa-brands fa-spotify text-base"></i> Conectar Cuenta Main
+          </button>
+        </div>
+
+        <div id="slot1-online" class="hidden space-y-3 pt-2">
+          <div class="flex items-center gap-3 p-3 bg-black/40 rounded-xl border border-gray-800">
+            <img id="slot1-avatar" src="" class="w-10 h-10 rounded-full bg-gray-700 object-cover">
+            <div class="overflow-hidden">
+              <p id="slot1-name" class="font-bold text-xs truncate text-white"></p>
+              <p class="text-[11px] text-spotify-green font-semibold">Conectado (Destino)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLOT 2: SUPLENTE 1 -->
+      <div class="glass-card p-6 space-y-4 border border-white/10">
+        <div class="flex items-center justify-between">
+          <span class="px-2.5 py-1 bg-white/10 text-gray-300 text-xs font-bold rounded-full">SLOT 2</span>
+          <i class="fa-solid fa-user-shield text-gray-400 text-lg"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-base">Cuenta Suplente 1</h3>
+          <p class="text-xs text-gray-400">Origen de canciones.</p>
+        </div>
+
+        <div id="slot2-offline" class="space-y-3 pt-2">
+          <button onclick="loginSlot('sup1')" class="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/10 transition">
+            <i class="fa-brands fa-spotify text-base"></i> Conectar Suplente 1
+          </button>
+        </div>
+
+        <div id="slot2-online" class="hidden space-y-3 pt-2">
+          <div class="flex items-center gap-3 p-3 bg-black/40 rounded-xl border border-gray-800">
+            <img id="slot2-avatar" src="" class="w-10 h-10 rounded-full bg-gray-700 object-cover">
+            <div class="overflow-hidden">
+              <p id="slot2-name" class="font-bold text-xs truncate text-white"></p>
+              <p class="text-[11px] text-gray-400">Origen activo</p>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] text-gray-400 font-medium">Elegir Playlist a extraer:</label>
+            <select id="slot2-playlists" class="w-full bg-black/60 border border-gray-700 rounded-lg text-xs p-2 focus:outline-none focus:border-spotify-green text-white"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLOT 3: SUPLENTE 2 -->
+      <div class="glass-card p-6 space-y-4 border border-white/10">
+        <div class="flex items-center justify-between">
+          <span class="px-2.5 py-1 bg-white/10 text-gray-300 text-xs font-bold rounded-full">SLOT 3</span>
+          <i class="fa-solid fa-user-shield text-gray-400 text-lg"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-base">Cuenta Suplente 2</h3>
+          <p class="text-xs text-gray-400">Origen de canciones.</p>
+        </div>
+
+        <div id="slot3-offline" class="space-y-3 pt-2">
+          <button onclick="loginSlot('sup2')" class="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 border border-white/10 transition">
+            <i class="fa-brands fa-spotify text-base"></i> Conectar Suplente 2
+          </button>
+        </div>
+
+        <div id="slot3-online" class="hidden space-y-3 pt-2">
+          <div class="flex items-center gap-3 p-3 bg-black/40 rounded-xl border border-gray-800">
+            <img id="slot3-avatar" src="" class="w-10 h-10 rounded-full bg-gray-700 object-cover">
+            <div class="overflow-hidden">
+              <p id="slot3-name" class="font-bold text-xs truncate text-white"></p>
+              <p class="text-[11px] text-gray-400">Origen activo</p>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] text-gray-400 font-medium">Elegir Playlist a extraer:</label>
+            <select id="slot3-playlists" class="w-full bg-black/60 border border-gray-700 rounded-lg text-xs p-2 focus:outline-none focus:border-spotify-green text-white"></select>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Panel de Ejecución -->
+    <div class="glass-card p-6 text-center space-y-4">
+      <div class="flex items-center justify-center gap-2 text-xs text-gray-300">
+        <input type="checkbox" id="dedupeCheck" checked class="accent-spotify-green w-4 h-4 rounded">
+        <label for="dedupeCheck" class="cursor-pointer">Eliminar canciones duplicadas automáticamente al combinar</label>
+      </div>
+
+      <button onclick="processFusion()" class="bg-spotify-green text-black font-extrabold px-8 py-3.5 rounded-full text-sm md:text-base shadow-lg hover:scale-105 transition transform active:scale-95 inline-flex items-center gap-2">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>Fusionar Playlists en Cuenta Main</span>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    const redirectUri = window.location.origin + window.location.pathname;
+    document.getElementById('uriDisplay').textContent = redirectUri;
+
+    let tokens = {
+      main: localStorage.getItem('token_main') || null,
+      sup1: localStorage.getItem('token_sup1') || null,
+      sup2: localStorage.getItem('token_sup2') || null
+    };
+
+    window.onload = () => {
+      const savedId = localStorage.getItem('spotify_client_id');
+      if (savedId) document.getElementById('clientIdInput').value = savedId;
+
+      // Capturar token de la URL si Spotify redirige de vuelta
+      const hash = window.location.hash;
+      if (hash) {
+        const params = new URLSearchParams(hash.substring(1));
+        const token = params.get('access_token');
+        const activeSlot = localStorage.getItem('pending_slot');
+
+        if (token && activeSlot) {
+          tokens[activeSlot] = token;
+          localStorage.setItem(`token_${activeSlot}`, token);
+          localStorage.removeItem('pending_slot');
+          window.location.hash = '';
+        }
+      }
+
+      initSlot('main');
+      initSlot('sup1');
+      initSlot('sup2');
+    };
+
+    function loginSlot(slotType) {
+      const clientId = document.getElementById('clientIdInput').value.trim();
+      if (!clientId) {
+        alert('Por favor ingresa tu Client ID de Spotify Developer arriba.');
+        return;
+      }
+      localStorage.setItem('spotify_client_id', clientId);
+      localStorage.setItem('pending_slot', slotType);
+
+      const scopes = 'playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private';
+      const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
+      
+      window.location.href = authUrl;
+    }
+
+    async function initSlot(slot) {
+      const token = tokens[slot];
+      if (!token) return;
+
+      try {
+        const res = await fetch('https://api.spotify.com/v1/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) throw new Error('Token expirado');
+        const user = await res.json();
+
+        const slotKey = slot === 'main' ? 'slot1' : slot === 'sup1' ? 'slot2' : 'slot3';
+        document.getElementById(`${slotKey}-offline`).classList.add('hidden');
+        document.getElementById(`${slotKey}-online`).classList.remove('hidden');
+
+        document.getElementById(`${slotKey}-name`).textContent = user.display_name || user.id;
+        if (user.images?.[0]?.url) {
+          document.getElementById(`${slotKey}-avatar`).src = user.images[0].url;
+        }
+
+        if (slot !== 'main') {
+          const pRes = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', { headers: { 'Authorization': `Bearer ${token}` } });
+          const pData = await pRes.json();
+          const select = document.getElementById(`${slotKey}-playlists`);
+          select.innerHTML = '';
+          
+          if (pData.items && pData.items.length > 0) {
+            pData.items.forEach(p => {
+              select.innerHTML += `<option value="${p.id}">${p.name} (${p.tracks.total} canciones)</option>`;
+            });
+          } else {
+            select.innerHTML = `<option value="">No se encontraron playlists</option>`;
+          }
+        }
+      } catch (e) {
+        console.error(`Error en slot ${slot}:`, e);
+        localStorage.removeItem(`token_${slot}`);
+        tokens[slot] = null;
+      }
+    }
+
+    async function processFusion() {
+      if (!tokens.main) {
+        alert('Debes conectar obligatoriamente la Cuenta Main (Slot 1) para poder recibir las canciones.');
+        return;
+      }
+
+      let allTracks = [];
+      const dedupe = document.getElementById('dedupeCheck').checked;
+      const trackSet = new Set();
+
+      async function fetchTracks(slot, playlistId) {
+        if (!playlistId || !tokens[slot]) return;
+        const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+          headers: { 'Authorization': `Bearer ${tokens[slot]}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        data.items.forEach(i => {
+          if (i.track) {
+            if (dedupe) {
+              if (!trackSet.has(i.track.id)) {
+                trackSet.add(i.track.id);
+                allTracks.push(i.track.uri);
+              }
+            } else {
+              allTracks.push(i.track.uri);
+            }
+          }
+        });
+      }
+
+      const p1 = document.getElementById('slot2-playlists')?.value;
+      const p2 = document.getElementById('slot3-playlists')?.value;
+
+      await fetchTracks('sup1', p1);
+      await fetchTracks('sup2', p2);
+
+      if (allTracks.length === 0) {
+        alert('No se encontraron canciones en las playlists seleccionadas de los slots suplentes.');
+        return;
+      }
+
+      try {
+        const meRes = await fetch('https://api.spotify.com/v1/me', { headers: { 'Authorization': `Bearer ${tokens.main}` } });
+        const me = await meRes.json();
+
+        const createRes = await fetch(`https://api.spotify.com/v1/users/${me.id}/playlists`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${tokens.main}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'Playlist Fusionada Multi-Cuenta', description: 'Creada automáticamente mediante app de slots.', public: false })
+        });
+        const newPlaylist = await createRes.json();
+
+        for (let i = 0; i < allTracks.length; i += 100) {
+          const chunk = allTracks.slice(i, i + 100);
+          await fetch(`https://api.spotify.com/v1/playlists/${newPlaylist.id}/tracks`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${tokens.main}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uris: chunk })
+          });
+        }
+
+        alert(`¡Éxito total! Se creó la playlist en tu Cuenta Main con ${allTracks.length} canciones únicas.`);
+      } catch (e) {
+        console.error(e);
+        alert('Ocurrió un error al crear la playlist final en tu cuenta main.');
+      }
+    }
+  </script>
+</body>
+</html>
