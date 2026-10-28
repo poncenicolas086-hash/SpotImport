@@ -1,313 +1,35 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fusionador de Spotify - Sistema de Slots</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <style>
-    body {
-      background: linear-gradient(135deg, #121212 0%, #181818 50%, #050505 100%);
-      color: #FFFFFF;
-      font-family: system-ui, -apple-system, sans-serif;
-      min-height: 100vh;
-    }
-    .spotify-green { color: #1DB954; }
-    .bg-spotify-green { background-color: #1DB954; }
-    .glass-card {
-      background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-    }
-  </style>
-</head>
-<body class="p-4 md:p-8">
-  <div class="max-w-5xl mx-auto space-y-6">
-    
-    <!-- Header -->
-    <header class="text-center space-y-2">
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-spotify-green/10 text-spotify-green text-sm font-semibold border border-spotify-green/20">
-        <i class="fa-brands fa-spotify"></i>
-        <span>Panel Multi-Cuenta por Slots</span>
-      </div>
-      <h1 class="text-3xl md:text-4xl font-extrabold">Conecta tus Cuentas y Fusiona</h1>
-      <p class="text-gray-400 text-sm">Conecta tus 3 cuentas, selecciona las playlists y crea la lista unificada en tu cuenta Main.</p>
-    </header>
-
-    <!-- Configuración Client ID -->
-    <div class="glass-card p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-      <div class="w-full md:w-1/2">
-        <label class="block text-xs text-gray-400 mb-1">Tu Client ID de Spotify Developer:</label>
-        <input type="text" id="clientIdInput" placeholder="Pega tu Client ID aquí" 
-          class="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-spotify-green">
-      </div>
-      <div class="text-xs text-gray-500">
-        <p><i class="fa-solid fa-circle-info mr-1"></i> La Redirect URI detectada es: <span id="uriDisplay" class="text-gray-300 font-mono"></span></p>
-      </div>
-    </div>
-
-    <!-- Contenedor de 3 Slots -->
-    <div class="grid md:grid-cols-3 gap-4">
-      
-      <!-- SLOT 1: MAIN -->
-      <div class="glass-card p-5 space-y-4 border-spotify-green/40">
-        <div class="flex items-center justify-between">
-          <span class="px-2 py-1 bg-spotify-green/20 text-spotify-green text-xs font-bold rounded">SLOT 1 - MAIN</span>
-          <i class="fa-solid fa-crown text-amber-400"></i>
-        </div>
-        <h3 class="font-bold text-sm">Cuenta Principal (Destino)</h3>
-        
-        <div id="slot1-offline" class="space-y-3">
-          <p class="text-xs text-gray-400">Aquí se creará la playlist con todas las canciones combinadas.</p>
-          <button onclick="loginSlot('main')" class="w-full bg-spotify-green text-black font-bold py-2 rounded-lg text-xs hover:bg-spotify-green/90 transition">
-            Conectar Cuenta Main
-          </button>
-        </div>
-
-        <div id="slot1-online" class="hidden space-y-3">
-          <div class="flex items-center gap-2 p-2 bg-black/40 rounded-lg">
-            <img id="slot1-avatar" src="" class="w-8 h-8 rounded-full bg-gray-700">
-            <div class="overflow-hidden">
-              <p id="slot1-name" class="font-bold text-xs truncate"></p>
-              <p class="text-[10px] text-spotify-green">Conectado (Destino)</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SLOT 2: SUPLENTE 1 -->
-      <div class="glass-card p-5 space-y-4">
-        <div class="flex items-center justify-between">
-          <span class="px-2 py-1 bg-white/10 text-gray-300 text-xs font-bold rounded">SLOT 2</span>
-          <i class="fa-solid fa-user text-gray-400"></i>
-        </div>
-        <h3 class="font-bold text-sm">Cuenta Suplente 1</h3>
-
-        <div id="slot2-offline" class="space-y-3">
-          <p class="text-xs text-gray-400">Inicia sesión para extraer sus playlists automáticamente.</p>
-          <button onclick="loginSlot('sup1')" class="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-2 rounded-lg text-xs border border-white/10 transition">
-            Conectar Suplente 1
-          </button>
-        </div>
-
-        <div id="slot2-online" class="hidden space-y-3">
-          <div class="flex items-center gap-2 p-2 bg-black/40 rounded-lg">
-            <img id="slot2-avatar" src="" class="w-8 h-8 rounded-full bg-gray-700">
-            <div class="overflow-hidden">
-              <p id="slot2-name" class="font-bold text-xs truncate"></p>
-              <p class="text-[10px] text-gray-400">Origen de canciones</p>
-            </div>
-          </div>
-          <div>
-            <label class="text-[11px] text-gray-400">Seleccionar Playlist:</label>
-            <select id="slot2-playlists" class="w-full bg-black/60 border border-gray-700 rounded text-xs p-1.5 mt-1 focus:outline-none"></select>
-          </div>
-        </div>
-      </div>
-
-      <!-- SLOT 3: SUPLENTE 2 -->
-      <div class="glass-card p-5 space-y-4">
-        <div class="flex items-center justify-between">
-          <span class="px-2 py-1 bg-white/10 text-gray-300 text-xs font-bold rounded">SLOT 3</span>
-          <i class="fa-solid fa-user text-gray-400"></i>
-        </div>
-        <h3 class="font-bold text-sm">Cuenta Suplente 2</h3>
-
-        <div id="slot3-offline" class="space-y-3">
-          <p class="text-xs text-gray-400">Inicia sesión para extraer sus playlists automáticamente.</p>
-          <button onclick="loginSlot('sup2')" class="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-2 rounded-lg text-xs border border-white/10 transition">
-            Conectar Suplente 2
-          </button>
-        </div>
-
-        <div id="slot3-online" class="hidden space-y-3">
-          <div class="flex items-center gap-2 p-2 bg-black/40 rounded-lg">
-            <img id="slot3-avatar" src="" class="w-8 h-8 rounded-full bg-gray-700">
-            <div class="overflow-hidden">
-              <p id="slot3-name" class="font-bold text-xs truncate"></p>
-              <p class="text-[10px] text-gray-400">Origen de canciones</p>
-            </div>
-          </div>
-          <div>
-            <label class="text-[11px] text-gray-400">Seleccionar Playlist:</label>
-            <select id="slot3-playlists" class="w-full bg-black/60 border border-gray-700 rounded text-xs p-1.5 mt-1 focus:outline-none"></select>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Botón de Acción Principal -->
-    <div class="glass-card p-6 text-center space-y-4">
-      <div class="flex items-center justify-center gap-2 text-xs text-gray-300">
-        <input type="checkbox" id="dedupeCheck" checked class="accent-spotify-green">
-        <label for="dedupeCheck">Eliminar canciones duplicadas automáticamente al combinar</label>
-      </div>
-
-      <button onclick="processFusion()" class="bg-spotify-green text-black font-extrabold px-8 py-3 rounded-full text-base shadow-lg hover:scale-105 transition transform active:scale-95">
-        <i class="fa-solid fa-bolt mr-2"></i> Fusionar Playlists en Cuenta Main
-      </button>
-    </div>
-
-  </div>
-
-  <script>
-    const redirectUri = window.location.origin + window.location.pathname;
-    document.getElementById('uriDisplay').textContent = redirectUri;
-
-    // Estado de tokens por slot
-    let tokens = {
-      main: localStorage.getItem('token_main') || null,
-      sup1: localStorage.getItem('token_sup1') || null,
-      sup2: localStorage.getItem('token_sup2') || null
-    };
-
-    window.onload = () => {
-      const savedId = localStorage.getItem('spotify_client_id');
-      if (savedId) document.getElementById('clientIdInput').value = savedId;
-
-      // Escuchar el retorno de Spotify Auth
-      const hash = window.location.hash;
-      if (hash) {
-        const params = new URLSearchParams(hash.substring(1));
-        const token = params.get('access_token');
-        const activeSlot = localStorage.getItem('pending_slot');
-
-        if (token && activeSlot) {
-          tokens[activeSlot] = token;
-          localStorage.setItem(`token_${activeSlot}`, token);
-          localStorage.removeItem('pending_slot');
-          window.location.hash = '';
-        }
-      }
-
-      // Cargar info de cada slot activo
-      initSlot('main');
-      initSlot('sup1');
-      initSlot('sup2');
-    };
-
-    function loginSlot(slotType) {
-      const clientId = document.getElementById('clientIdInput').value.trim();
-      if (!clientId) {
-        alert('Ingresa tu Client ID arriba antes de conectar.');
-        return;
-      }
-      localStorage.setItem('spotify_client_id', clientId);
-      localStorage.setItem('pending_slot', slotType);
-
-      const scopes = 'playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private';
-      const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
-      
-      window.location.href = authUrl;
-    }
-
-    async function initSlot(slot) {
-      const token = tokens[slot];
-      if (!token) return;
-
-      try {
-        // Obtener usuario
-        const res = await fetch('https://api.spotify.com/v1/me', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (!res.ok) throw new Error('Token expirado');
-        const user = await res.json();
-
-        document.getElementById(`${slot === 'main' ? 'slot1' : slot === 'sup1' ? 'slot2' : 'slot3'}-offline`).classList.add('hidden');
-        document.getElementById(`${slot === 'main' ? 'slot1' : slot === 'sup1' ? 'slot2' : 'slot3'}-online`).classList.remove('hidden');
-
-        document.getElementById(`${slot === 'main' ? 'slot1' : slot === 'sup1' ? 'slot2' : 'slot3'}-name`).textContent = user.display_name;
-        if (user.images?.[0]?.url) {
-          document.getElementById(`${slot === 'main' ? 'slot1' : slot === 'sup1' ? 'slot2' : 'slot3'}-avatar`).src = user.images[0].url;
-        }
-
-        // Si es suplente, cargar sus playlists en el <select>
-        if (slot !== 'main') {
-          const pRes = await fetch('https://api.spotify.com/v1/me/playlists', { headers: { 'Authorization': `Bearer ${token}` } });
-          const pData = await pRes.json();
-          const select = document.getElementById(`${slot === 'sup1' ? 'slot2' : 'slot3'}-playlists`);
-          select.innerHTML = '';
-          pData.items.forEach(p => {
-            select.innerHTML += `<option value="${p.id}">${p.name} (${p.tracks.total} canciones)</option>`;
-          });
-        }
-      } catch (e) {
-        console.error(`Error en slot ${slot}:`, e);
-      }
-    }
-
-    async function processFusion() {
-      if (!tokens.main) {
-        alert('Debes conectar obligatoriamente la Cuenta Main (Slot 1) para recibir las canciones.');
-        return;
-      }
-
-      let allTracks = [];
-      const dedupe = document.getElementById('dedupeCheck').checked;
-      const trackSet = new Set();
-
-      // Función auxiliar para extraer canciones de una playlist
-      async function fetchTracks(slot, playlistId) {
-        if (!playlistId || !tokens[slot]) return;
-        const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
-          headers: { 'Authorization': `Bearer ${tokens[slot]}` }
-        });
-        const data = await res.json();
-        data.items.forEach(i => {
-          if (i.track) {
-            if (dedupe) {
-              if (!trackSet.has(i.track.id)) {
-                trackSet.add(i.track.id);
-                allTracks.push(i.track.uri);
-              }
-            } else {
-              allTracks.push(i.track.uri);
-            }
-          }
-        });
-      }
-
-      // Obtener selección de slots suplentes
-      const p1 = document.getElementById('slot2-playlists')?.value;
-      const p2 = document.getElementById('slot3-playlists')?.value;
-
-      await fetchTracks('sup1', p1);
-      await fetchTracks('sup2', p2);
-
-      if (allTracks.length === 0) {
-        alert('No se seleccionaron playlists con canciones o los slots suplentes están vacíos.');
-        return;
-      }
-
-      // Crear Playlist en Cuenta Main
-      try {
-        const meRes = await fetch('https://api.spotify.com/v1/me', { headers: { 'Authorization': `Bearer ${tokens.main}` } });
-        const me = await meRes.json();
-
-        const createRes = await fetch(`https://api.spotify.com/v1/users/${me.id}/playlists`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${tokens.main}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'Playlist Fusionada (Slots)', public: false })
-        });
-        const newPlaylist = await createRes.json();
-
-        // Enviar canciones en bloques de 100
-        for (let i = 0; i < allTracks.length; i += 100) {
-          const chunk = allTracks.slice(i, i + 100);
-          await fetch(`https://api.spotify.com/v1/playlists/${newPlaylist.id}/tracks`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${tokens.main}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uris: chunk })
-          });
-        }
-
-        alert(`¡Éxito! Se creó la playlist en tu Cuenta Main con ${allTracks.length} canciones únicas.`);
-      } catch (e) {
-        console.error(e);
-        alert('Ocurrió un error al crear la playlist final.');
-      }
-    }
-  </script>
-</body>
-</html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SpotImport - Fusionador de Spotify</title><script src="https://cdn.tailwindcss.com"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"><style>body{background:linear-gradient(135deg,#121212,#181818 50%,#050505);color:#fff;font-family:system-ui,sans-serif;min-height:100vh}.spotify-green{color:#1DB954}.bg-spotify-green{background:#1DB954}.glass-card{background:rgba(255,255,255,.03);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);border-radius:16px}button:disabled{opacity:.5;cursor:not-allowed}</style></head>
+<body class="p-4 md:p-8"><div class="max-w-5xl mx-auto space-y-6"><header class="text-center space-y-2"><div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-900/20 text-green-400 text-sm font-semibold border border-green-900/40"><i class="fa-brands fa-spotify"></i> Panel Multi-Cuenta por Slots</div><h1 class="text-3xl md:text-4xl font-extrabold">Conecta tus Cuentas y Fusiona</h1><p class="text-gray-400 text-sm">Conectá hasta 3 cuentas y creá una playlist unificada en tu cuenta principal.</p></header>
+<div class="glass-card p-4 flex flex-col md:flex-row items-center justify-between gap-4"><div class="w-full md:w-1/2"><label for="clientIdInput" class="block text-xs text-gray-400 mb-1">Tu Client ID de Spotify Developer:</label><input type="text" id="clientIdInput" placeholder="Pegá tu Client ID aquí" class="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-xs"></div><div class="text-xs text-gray-400 break-all">Redirect URI: <span id="uriDisplay" class="text-gray-200 font-mono"></span></div></div>
+<div class="grid md:grid-cols-3 gap-4" id="slots"></div>
+<div class="glass-card p-6 text-center space-y-4"><label class="flex items-center justify-center gap-2 text-xs text-gray-300"><input type="checkbox" id="dedupeCheck" checked class="accent-green-500"> No agregar canciones duplicadas</label><button id="fusionBtn" class="bg-spotify-green text-black font-extrabold px-8 py-3 rounded-full text-base hover:brightness-110"><i class="fa-solid fa-bolt mr-2"></i> Fusionar Playlists en Cuenta Main</button><p id="status" class="text-sm text-gray-300 whitespace-pre-wrap" role="status" aria-live="polite"></p></div></div>
+<script>
+'use strict';
+const redirectUri = location.origin + location.pathname;
+const scopes = 'user-read-private user-read-email playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private user-library-read';
+const slotNames = {main:'Cuenta Principal (Destino)',sup1:'Cuenta Suplente 1',sup2:'Cuenta Suplente 2'};
+const slotIds = ['main','sup1','sup2'];
+const tokens = {};
+const el = id => document.getElementById(id);
+const status = message => { el('status').textContent = message; };
+el('uriDisplay').textContent = redirectUri;
+el('slots').innerHTML = slotIds.map((slot,i)=>`<section class="glass-card p-5 space-y-4"><div class="flex items-center justify-between"><span class="px-2 py-1 bg-white/10 text-xs font-bold rounded">SLOT ${i+1}${i===0?' - MAIN':''}</span><i class="fa-solid fa-${i===0?'crown text-amber-400':'user text-gray-400'}"></i></div><h3 class="font-bold text-sm">${slotNames[slot]}</h3><div id="${slot}-offline" class="space-y-3"><p class="text-xs text-gray-400">${i===0?'Acá se creará la playlist combinada.':'Conectá esta cuenta para importar sus playlists.'}</p><button data-login="${slot}" class="w-full ${i===0?'bg-spotify-green text-black':'bg-white/10 text-white'} font-bold py-2 rounded-lg text-xs">Conectar ${i===0?'Cuenta Main':`Suplente ${i}`}</button></div><div id="${slot}-online" class="hidden space-y-3"><div class="flex items-center gap-2 p-2 bg-black/40 rounded-lg"><img id="${slot}-avatar" alt="Avatar" class="w-8 h-8 rounded-full bg-gray-700 hidden"><div class="overflow-hidden"><p id="${slot}-name" class="font-bold text-xs truncate"></p><p class="text-[10px] text-green-400">Conectado</p></div></div>${i===0?'':`<div><label class="text-[11px] text-gray-400">Playlists para importar (podés elegir varias):</label><div id="${slot}-playlists" class="max-h-48 overflow-auto space-y-2 mt-2 text-xs"></div><label class="flex gap-2 mt-3 text-xs"><input type="checkbox" id="${slot}-liked"> Incluir canciones guardadas (Me gusta)</label></div>`}<button data-disconnect="${slot}" class="text-xs text-gray-400 underline">Desconectar</button></div></section>`).join('');
+function b64url(bytes){return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function randomString(){return b64url(crypto.getRandomValues(new Uint8Array(48)));}
+async function challenge(verifier){const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier));return b64url(new Uint8Array(hash));}
+async function loginSlot(slot){const clientId=el('clientIdInput').value.trim();if(!/^[a-f0-9]{32}$/i.test(clientId)){alert('Ingresá un Client ID válido de 32 caracteres.');return;}localStorage.setItem('spotify_client_id',clientId);const verifier=randomString(),state=randomString();sessionStorage.setItem('spotify_oauth_pending',JSON.stringify({slot,verifier,state,clientId}));const params=new URLSearchParams({client_id:clientId,response_type:'code',redirect_uri:redirectUri,scope:scopes,code_challenge_method:'S256',code_challenge:await challenge(verifier),state,show_dialog:'true'});location.assign('https://accounts.spotify.com/authorize?'+params);}
+async function tokenExchange(body){const response=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)});const data=await response.json();if(!response.ok)throw new Error(data.error_description||data.error||`Token HTTP ${response.status}`);return data;}
+function saveToken(slot,data){const previous=tokens[slot]||{};tokens[slot]={access_token:data.access_token,refresh_token:data.refresh_token||previous.refresh_token,expires_at:Date.now()+((data.expires_in||3600)-60)*1000};sessionStorage.setItem('spotify_token_'+slot,JSON.stringify(tokens[slot]));}
+async function getToken(slot){const info=tokens[slot];if(!info)throw new Error(`Conectá la cuenta ${slotNames[slot]}`);if(Date.now()<info.expires_at)return info.access_token;if(!info.refresh_token)throw new Error(`La sesión de ${slotNames[slot]} expiró; reconectala.`);const clientId=el('clientIdInput').value.trim();saveToken(slot,await tokenExchange({grant_type:'refresh_token',refresh_token:info.refresh_token,client_id:clientId}));return tokens[slot].access_token;}
+async function api(slot,path,options={}){const token=await getToken(slot);const response=await fetch(path.startsWith('https://')?path:'https://api.spotify.com/v1'+path,{...options,headers:{Authorization:'Bearer '+token,...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})}});let data;try{data=await response.json();}catch{data={};}if(!response.ok){const detail=typeof data.error==='object'?data.error.message:data.error;throw new Error(`Spotify HTTP ${response.status}: ${detail||response.statusText} (${path})`);}return data;}
+async function getAll(slot,path){const items=[];let next=path;while(next){const data=await api(slot,next);if(!Array.isArray(data.items))throw new Error('Spotify devolvió una respuesta inesperada al consultar '+path);items.push(...data.items);next=data.next;}return items;}
+async function initSlot(slot){if(!tokens[slot])return;try{const user=await api(slot,'/me');el(slot+'-offline').classList.add('hidden');el(slot+'-online').classList.remove('hidden');el(slot+'-name').textContent=user.display_name||user.id;if(user.images?.[0]?.url){el(slot+'-avatar').src=user.images[0].url;el(slot+'-avatar').classList.remove('hidden');}if(slot!=='main'){const playlists=await getAll(slot,'/me/playlists?limit=50');const container=el(slot+'-playlists');container.replaceChildren();for(const p of playlists){if(!p)continue;const label=document.createElement('label');label.className='flex gap-2 items-start';const check=document.createElement('input');check.type='checkbox';check.value=p.id;check.className='mt-0.5';const name=document.createElement('span');name.textContent=p.name+' ('+(p.items?.total??p.tracks?.total??'?')+' canciones)';label.append(check,name);container.append(label);}if(!playlists.length)container.textContent='No se encontraron playlists.';}}catch(error){status(`No se pudo cargar ${slotNames[slot]}: ${error.message}`);}}
+async function handleCallback(){const url=new URL(location.href);const code=url.searchParams.get('code'),error=url.searchParams.get('error');if(!code&&!error)return;history.replaceState({},'',redirectUri);const raw=sessionStorage.getItem('spotify_oauth_pending');sessionStorage.removeItem('spotify_oauth_pending');if(error)throw new Error('Spotify rechazó la conexión: '+error);if(!raw)throw new Error('Falta la sesión de autorización. Volvé a conectar la cuenta.');const pending=JSON.parse(raw);if(url.searchParams.get('state')!==pending.state)throw new Error('El estado de autorización no coincide. Intentá de nuevo.');const data=await tokenExchange({client_id:pending.clientId,grant_type:'authorization_code',code,redirect_uri:redirectUri,code_verifier:pending.verifier});saveToken(pending.slot,data);status(`${slotNames[pending.slot]} conectada correctamente.`);}
+function disconnect(slot){delete tokens[slot];sessionStorage.removeItem('spotify_token_'+slot);el(slot+'-online').classList.add('hidden');el(slot+'-offline').classList.remove('hidden');status(`${slotNames[slot]} desconectada.`);}
+async function processFusion(){const button=el('fusionBtn');if(!tokens.main){alert('Primero conectá la Cuenta Main.');return;}const selected=slotIds.filter(s=>s!=='main'&&tokens[s]);if(!selected.length){alert('Conectá al menos una cuenta suplente.');return;}button.disabled=true;try{const dedupe=el('dedupeCheck').checked,seen=new Set(),uris=[];const add=track=>{if(!track||track.is_local||!track.uri||track.type!=='track')return;const key=track.id||track.uri;if(dedupe&&seen.has(key))return;seen.add(key);uris.push(track.uri);};for(const slot of selected){const playlistIds=[...el(slot+'-playlists').querySelectorAll('input:checked')].map(x=>x.value);for(const id of playlistIds){status(`Leyendo playlist de ${slotNames[slot]}...`);const entries=await getAll(slot,`/playlists/${encodeURIComponent(id)}/items?limit=50`);entries.forEach(entry=>add(entry.item||entry.track));}if(el(slot+'-liked').checked){status(`Leyendo canciones guardadas de ${slotNames[slot]}...`);const entries=await getAll(slot,'/me/tracks?limit=50');entries.forEach(entry=>add(entry.track));}}if(!uris.length){alert('No hay canciones para fusionar. Seleccioná playlists o Me gusta.');return;}status(`Creando playlist con ${uris.length} canciones...`);const playlist=await api('main','/me/playlists',{method:'POST',body:JSON.stringify({name:'Playlist Fusionada (Slots)',description:'Creada con SpotImport',public:false})});if(!playlist.id)throw new Error('Spotify no devolvió el ID de la playlist creada.');for(let i=0;i<uris.length;i+=100){const chunk=uris.slice(i,i+100);await api('main',`/playlists/${playlist.id}/items`,{method:'POST',body:JSON.stringify({uris:chunk})});status(`Copiadas ${Math.min(i+chunk.length,uris.length)} de ${uris.length} canciones...`);}status(`¡Listo! Se creó una playlist con ${uris.length} canciones en la cuenta Main.\nhttps://open.spotify.com/playlist/${playlist.id}`);}catch(error){console.error(error);status('Error: '+error.message+'\nSi la API indica 403, revisá los permisos y restricciones de tu app en Spotify Developer.');}finally{button.disabled=false;}}
+for(const button of document.querySelectorAll('[data-login]'))button.addEventListener('click',()=>loginSlot(button.dataset.login).catch(e=>status(e.message)));
+for(const button of document.querySelectorAll('[data-disconnect]'))button.addEventListener('click',()=>disconnect(button.dataset.disconnect));
+el('fusionBtn').addEventListener('click',processFusion);
+(async()=>{const savedId=localStorage.getItem('spotify_client_id');if(savedId)el('clientIdInput').value=savedId;for(const slot of slotIds){try{tokens[slot]=JSON.parse(sessionStorage.getItem('spotify_token_'+slot)||'null');}catch{tokens[slot]=null;}}try{await handleCallback();}catch(error){status('Error de conexión: '+error.message);}await Promise.all(slotIds.map(initSlot));})();
+</script></body></html>
