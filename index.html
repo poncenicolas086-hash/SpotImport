@@ -184,8 +184,6 @@ $('transferBtn').addEventListener('click',()=>{
 });
 $('jsonBtn').addEventListener('click',()=>{if(!finalTracks.length)return;download('spotimport-playlist.json',JSON.stringify({name:$('playlistName').value.trim()||'Playlist Fusionada - SpotImport',createdAt:new Date().toISOString(),tracks:finalTracks.map(t=>({title:t.title,artist:t.artist,uri:t.uri,url:t.uri.startsWith('spotify:track:')?'https://open.spotify.com/track/'+t.uri.split(':').pop():t.url}))},null,2),'application/json;charset=utf-8');});
 $('copyBtn').addEventListener('click',async()=>{if(!finalTracks.length)return;const text=finalTracks.map((t,i)=>`${i+1}. ${t.title} — ${t.artist}${t.uri?' ('+t.uri+')':''}`).join('\n');try{await navigator.clipboard.writeText(text);$('status').textContent='Lista copiada al portapapeles.';}catch{$('status').textContent='El navegador bloqueó la copia automática. Exportá CSV o JSON.';}});
-</script>
-
 // Abrir perfiles exactos de Spotify mediante el enlace compartido, evitando resultados con nombres parecidos.
 ['sup1','sup2'].forEach(slot=>{
  const input=document.getElementById('profile-'+slot);
@@ -203,6 +201,6 @@ $('copyBtn').addEventListener('click',async()=>{if(!finalTracks.length)return;co
  button.addEventListener('click',openExactProfile);
  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();openExactProfile();}});
 });
-
+</script>
 </body>
 </html>
