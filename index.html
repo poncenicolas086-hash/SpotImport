@@ -16,10 +16,10 @@ body{background:linear-gradient(135deg,#121212 0%,#181818 50%,#050505 100%);colo
 <div class="glass-card p-4 md:p-5 space-y-2"><div class="flex items-start gap-3"><i class="fa-solid fa-circle-info text-green-400 mt-1"></i><div class="text-sm text-gray-300"><b>Cómo funciona esta versión:</b> los archivos se procesan en tu navegador; no se suben a ningún servidor de SpotImport. Spotify no permite crear una playlist en tu cuenta sin acceso autorizado a su API, así que esta versión prepara un CSV/JSON con la selección para que la puedas conservar o usar para importarla con una herramienta compatible. Para comparar contra Main, importá también los datos de esa cuenta.</div></div><p class="text-xs text-gray-500">Acepta ZIP de exportación de Spotify o archivos JSON individuales. Para obtenerlos, solicitá una copia en <a class="underline text-green-400" href="https://www.spotify.com/account/privacy/" target="_blank" rel="noopener noreferrer">Privacidad de Spotify</a>. La exportación puede tardar en llegar. Los enlaces públicos intentan leer la lista visible del reproductor web de Spotify mediante un servicio intermediario. Puede fallar o devolver solo una parte de los temas (habitualmente hasta unos 50); si pasa, usá ZIP/JSON.</p></div>
 <div class="grid md:grid-cols-3 gap-4" id="slots">
 <section class="glass-card p-5 space-y-4"><div class="flex items-center justify-between"><span class="px-2 py-1 bg-green-900/30 text-green-400 text-xs font-bold rounded">SLOT 1 · MAIN</span><i class="fa-solid fa-crown text-amber-400"></i></div><h2 class="font-bold">Cuenta principal (destino)</h2><p class="text-xs text-gray-400">Opcional: importá sus datos para excluir canciones que ya tenés guardadas o en playlists.</p><label class="text-xs text-gray-300">Archivo ZIP o JSON de Main</label><input id="file-main" class="file-input" type="file" accept=".zip,.json,application/json,application/zip" multiple><p id="status-main" class="text-xs text-gray-400">Todavía no se importaron datos.</p><div id="summary-main" class="text-xs text-gray-400"></div></section>
-<section class="glass-card p-5 space-y-4"><div class="flex items-center justify-between"><span class="px-2 py-1 bg-white/10 text-gray-200 text-xs font-bold rounded">SLOT 2</span><i class="fa-solid fa-user text-gray-400"></i></div><h2 class="font-bold">Cuenta suplente 1</h2><p class="text-xs text-gray-400">Importá los datos y seleccioná playlists/canciones guardadas, o intentá importar una playlist pública por enlace.</p><label class="text-xs text-gray-300">Archivo ZIP o JSON</label><input id="file-sup1" class="file-input" type="file" accept=".zip,.json,application/json,application/zip" multiple>
+<section class="glass-card p-5 space-y-4"><div class="flex items-center justify-between"><span class="px-2 py-1 bg-white/10 text-gray-200 text-xs font-bold rounded">SLOT 2</span><i class="fa-solid fa-user text-gray-400"></i></div><h2 class="font-bold">Cuenta suplente 1</h2><p class="text-xs text-gray-400">Importá los datos y seleccioná playlists/canciones guardadas, o intentá importar una playlist pública por enlace.</p><div class="space-y-2 rounded-lg border border-spotify-green/30 bg-black/20 p-3"><label for="profile-sup1" class="text-xs font-semibold text-gray-200">Buscar perfil de Spotify</label><div class="flex gap-2"><input id="profile-sup1" class="min-w-0 flex-1 bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-xs" type="text" value="nicolevi" placeholder="Usuario o enlace del perfil"><button id="search-profile-sup1" type="button" class="bg-spotify-green text-black font-bold rounded-lg px-3 py-2 text-xs whitespace-nowrap">Buscar perfil</button></div><p class="text-[11px] text-gray-500">Escribí el usuario para buscarlo en Spotify o pegá el enlace exacto del perfil para abrirlo.</p></div><label class="text-xs text-gray-300">Archivo ZIP o JSON</label><input id="file-sup1" class="file-input" type="file" accept=".zip,.json,application/json,application/zip" multiple>
 <div class="space-y-2 border-t border-white/10 pt-3"><label for="url-sup1" class="text-xs text-gray-300">O pegá el enlace de una playlist pública</label><div class="flex gap-2"><input id="url-sup1" class="min-w-0 flex-1 bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-xs" placeholder="https://open.spotify.com/playlist/..." type="url"><button id="add-url-sup1" type="button" class="bg-white/10 hover:bg-white/20 rounded-lg px-3 py-2 text-xs">Agregar</button></div><div id="links-sup1" class="space-y-2 text-xs"></div></div>
 <p id="status-sup1" class="text-xs text-gray-400">Todavía no se importaron datos.</p><div id="content-sup1" class="space-y-3"></div></section>
-<section class="glass-card p-5 space-y-4"><div class="flex items-center justify-between"><span class="px-2 py-1 bg-white/10 text-gray-200 text-xs font-bold rounded">SLOT 3</span><i class="fa-solid fa-user text-gray-400"></i></div><h2 class="font-bold">Cuenta suplente 2</h2><p class="text-xs text-gray-400">Importá los datos y seleccioná playlists/canciones guardadas, o intentá importar una playlist pública por enlace.</p><label class="text-xs text-gray-300">Archivo ZIP o JSON</label><input id="file-sup2" class="file-input" type="file" accept=".zip,.json,application/json,application/zip" multiple>
+<section class="glass-card p-5 space-y-4"><div class="flex items-center justify-between"><span class="px-2 py-1 bg-white/10 text-gray-200 text-xs font-bold rounded">SLOT 3</span><i class="fa-solid fa-user text-gray-400"></i></div><h2 class="font-bold">Cuenta suplente 2</h2><p class="text-xs text-gray-400">Importá los datos y seleccioná playlists/canciones guardadas, o intentá importar una playlist pública por enlace.</p><div class="space-y-2 rounded-lg border border-spotify-green/30 bg-black/20 p-3"><label for="profile-sup2" class="text-xs font-semibold text-gray-200">Buscar perfil de Spotify</label><div class="flex gap-2"><input id="profile-sup2" class="min-w-0 flex-1 bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-xs" type="text" value="nico" placeholder="Usuario o enlace del perfil"><button id="search-profile-sup2" type="button" class="bg-spotify-green text-black font-bold rounded-lg px-3 py-2 text-xs whitespace-nowrap">Buscar perfil</button></div><p class="text-[11px] text-gray-500">Escribí el usuario para buscarlo en Spotify o pegá el enlace exacto del perfil para abrirlo.</p></div><label class="text-xs text-gray-300">Archivo ZIP o JSON</label><input id="file-sup2" class="file-input" type="file" accept=".zip,.json,application/json,application/zip" multiple>
 <div class="space-y-2 border-t border-white/10 pt-3"><label for="url-sup2" class="text-xs text-gray-300">O pegá el enlace de una playlist pública</label><div class="flex gap-2"><input id="url-sup2" class="min-w-0 flex-1 bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-xs" placeholder="https://open.spotify.com/playlist/..." type="url"><button id="add-url-sup2" type="button" class="bg-white/10 hover:bg-white/20 rounded-lg px-3 py-2 text-xs">Agregar</button></div><div id="links-sup2" class="space-y-2 text-xs"></div></div>
 <p id="status-sup2" class="text-xs text-gray-400">Todavía no se importaron datos.</p><div id="content-sup2" class="space-y-3"></div></section>
 </div>
@@ -184,6 +184,37 @@ $('transferBtn').addEventListener('click',()=>{
 });
 $('jsonBtn').addEventListener('click',()=>{if(!finalTracks.length)return;download('spotimport-playlist.json',JSON.stringify({name:$('playlistName').value.trim()||'Playlist Fusionada - SpotImport',createdAt:new Date().toISOString(),tracks:finalTracks.map(t=>({title:t.title,artist:t.artist,uri:t.uri,url:t.uri.startsWith('spotify:track:')?'https://open.spotify.com/track/'+t.uri.split(':').pop():t.url}))},null,2),'application/json;charset=utf-8');});
 $('copyBtn').addEventListener('click',async()=>{if(!finalTracks.length)return;const text=finalTracks.map((t,i)=>`${i+1}. ${t.title} — ${t.artist}${t.uri?' ('+t.uri+')':''}`).join('\n');try{await navigator.clipboard.writeText(text);$('status').textContent='Lista copiada al portapapeles.';}catch{$('status').textContent='El navegador bloqueó la copia automática. Exportá CSV o JSON.';}});
+
+// Búsqueda de perfiles de Spotify en las dos cuentas suplentes.
+function openSpotifyProfileSearch(inputId) {
+  const field = document.getElementById(inputId);
+  const raw = (field?.value || '').trim();
+  if (!raw) {
+    field?.focus();
+    return;
+  }
+  let target = '';
+  // Si pegaron un enlace de perfil, abrir ese perfil directamente.
+  const profileUrl = raw.match(/https?:\/\/(?:open\.)?spotify\.com\/(?:intl-[a-z]{2}\/)?user\/[^\s?]+(?:\?[^\s]*)?/i);
+  if (profileUrl) {
+    target = profileUrl[0];
+  } else {
+    const spotifyUri = raw.match(/^spotify:user:([A-Za-z0-9_-]+)/i);
+    if (spotifyUri) {
+      target = 'https://open.spotify.com/user/' + encodeURIComponent(spotifyUri[1]);
+    } else {
+      // Un nombre de usuario no identifica siempre un perfil único; abrir la búsqueda de Spotify.
+      target = 'https://open.spotify.com/search/' + encodeURIComponent(raw);
+    }
+  }
+  window.open(target, '_blank', 'noopener,noreferrer');
+}
+document.getElementById('search-profile-sup1')?.addEventListener('click', () => openSpotifyProfileSearch('profile-sup1'));
+document.getElementById('search-profile-sup2')?.addEventListener('click', () => openSpotifyProfileSearch('profile-sup2'));
+['profile-sup1','profile-sup2'].forEach(id => document.getElementById(id)?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') openSpotifyProfileSearch(id);
+}));
+
 </script>
 </body>
 </html>
